@@ -1,0 +1,303 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "e470739e-ef08-4555-8363-2a6cbce3da3a",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "tables": {
+    "guilds": {
+      "name": "guilds",
+      "columns": {
+        "guildId": {
+          "name": "guildId",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "markov4": {
+      "name": "markov4",
+      "columns": {
+        "messageId": {
+          "name": "messageId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "word1": {
+          "name": "word1",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "word2": {
+          "name": "word2",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "word3": {
+          "name": "word3",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "word4": {
+          "name": "word4",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "word5": {
+          "name": "word5",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "markov4_messageId_idx": {
+          "name": "markov4_messageId_idx",
+          "columns": [
+            "messageId"
+          ],
+          "isUnique": false
+        },
+        "markov4_prefix_idx": {
+          "name": "markov4_prefix_idx",
+          "columns": [
+            "word1",
+            "word2",
+            "word3",
+            "word4"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "markov4_messageId_messages_messageId_fk": {
+          "name": "markov4_messageId_messages_messageId_fk",
+          "tableFrom": "markov4",
+          "tableTo": "messages",
+          "columnsFrom": [
+            "messageId"
+          ],
+          "columnsTo": [
+            "messageId"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "messages": {
+      "name": "messages",
+      "columns": {
+        "messageId": {
+          "name": "messageId",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "guildId": {
+          "name": "guildId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "channelId": {
+          "name": "channelId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "timestamp": {
+          "name": "timestamp",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "messages_guildId": {
+          "name": "messages_guildId",
+          "columns": [
+            "guildId"
+          ],
+          "isUnique": false
+        },
+        "messages_guildId_userId_idx": {
+          "name": "messages_guildId_userId_idx",
+          "columns": [
+            "guildId",
+            "userId"
+          ],
+          "isUnique": false
+        },
+        "messages_channelId_idx": {
+          "name": "messages_channelId_idx",
+          "columns": [
+            "channelId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "messages_userId_users_userId_fk": {
+          "name": "messages_userId_users_userId_fk",
+          "tableFrom": "messages",
+          "tableTo": "users",
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "userId"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "messages_guildId_guilds_guildId_fk": {
+          "name": "messages_guildId_guilds_guildId_fk",
+          "tableFrom": "messages",
+          "tableTo": "guilds",
+          "columnsFrom": [
+            "guildId"
+          ],
+          "columnsTo": [
+            "guildId"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "users": {
+      "name": "users",
+      "columns": {
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "username": {
+          "name": "username",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "optedOut": {
+          "name": "optedOut",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    }
+  },
+  "views": {
+    "messages_view": {
+      "columns": {
+        "messageId": {
+          "name": "messageId",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "guildId": {
+          "name": "guildId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "channelId": {
+          "name": "channelId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "timestamp": {
+          "name": "timestamp",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "name": "messages_view",
+      "isExisting": false,
+      "definition": "select \"messages\".\"messageId\", \"messages\".\"userId\", \"messages\".\"guildId\", \"messages\".\"channelId\", \"messages\".\"timestamp\", \"messages\".\"content\" from \"messages\" inner join \"users\" on \"messages\".\"userId\" = \"users\".\"userId\" where not \"users\".\"optedOut\""
+    }
+  },
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "indexes": {}
+  }
+}
