@@ -15,6 +15,7 @@ export const usersTable = sqliteTable("users", {
     userId: text().primaryKey(),
     username: text().notNull(),
     optedOut: integer({ mode: "boolean" }).default(false).notNull(),
+    isBot: integer({ mode: "boolean" }).default(false).notNull(),
 });
 
 export const messagesTable = sqliteTable(

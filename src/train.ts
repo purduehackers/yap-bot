@@ -2,6 +2,7 @@ import { type Message } from "discord.js";
 import { Tokenizr } from "tokenizr";
 import { markov4Table } from "./db/schema";
 import { db } from "./db";
+import type { SQLiteBunTransaction } from "drizzle-orm/bun-sqlite";
 
 enum Tokens {
     Space = "space",
@@ -32,7 +33,10 @@ export function* tokenize(message: string) {
     }
 }
 
-export async function addMessageToMarkov4(message: Message) {
+export async function addMessageToMarkov4(
+    message: Message,
+    transaction?: Parameters<Parameters<typeof db.transaction>[0]>[0],
+) {
     if (message.author.bot || message.content.trim().length === 0) {
         return;
     }
@@ -58,5 +62,5 @@ export async function addMessageToMarkov4(message: Message) {
         word4: prefix[3],
         word5: null,
     });
-    await db.insert(markov4Table).values(rows);
+    await (transaction ?? db).insert(markov4Table).values(rows);
 }

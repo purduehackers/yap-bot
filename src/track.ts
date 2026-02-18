@@ -20,10 +20,14 @@ export async function register(client: Client<true>) {
     await db
         .insert(usersTable)
         .values(
-            allUsers.map((user) => ({
-                userId: user.id,
-                username: user.username,
-            })),
+            allUsers.map(
+                (user) =>
+                    ({
+                        userId: user.id,
+                        username: user.username,
+                        isBot: user.bot,
+                    }) satisfies typeof usersTable.$inferInsert,
+            ),
         )
         .onConflictDoNothing();
     console.log("Guild users added/updated");
@@ -33,6 +37,7 @@ export async function register(client: Client<true>) {
         const user: typeof usersTable.$inferInsert = {
             userId: member.user.id,
             username: member.user.username,
+            isBot: member.user.bot,
         };
         await db.insert(usersTable).values(user).onConflictDoNothing();
         console.log("Guild user added", user);
