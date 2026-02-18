@@ -32,9 +32,10 @@ export function* tokenize(message: string) {
     }
 }
 
-export async function addMessageToMarkov4(
-    message: Pick<Message, "id" | "content">,
-) {
+export async function addMessageToMarkov4(message: Message) {
+    if (message.author.bot || message.content.trim().length === 0) {
+        return;
+    }
     const prefix: (string | null)[] = [null, null, null, null];
     const rows: (typeof markov4Table.$inferInsert)[] = [];
     for (const token of tokenize(message.content)) {

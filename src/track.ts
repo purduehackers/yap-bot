@@ -65,9 +65,7 @@ export async function register(client: Client<true>) {
         };
         await db.insert(messagesTable).values(messageRow);
         console.log("Message created", messageRow);
-        if (!message.author.bot && message.content.trim().length > 0) {
-            await addMessageToMarkov4(message);
-        }
+        await addMessageToMarkov4(message);
         console.log("Message added to Markov model", message.id);
     });
 
@@ -84,7 +82,11 @@ export async function register(client: Client<true>) {
             oldContent: oldMessage.content,
             newContent: newMessage.content,
         });
-        // TODO: update entries for message in Markov model
+        // Delete and re-add message to Markov model
+        await db
+            .delete(markov4Table)
+            .where(eq(markov4Table.messageId, oldMessage.id));
+        await addMessageToMarkov4(newMessage);
     });
 
     // Delete deleted messages
