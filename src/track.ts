@@ -1,7 +1,8 @@
 import { Events, type Client } from "discord.js";
 import { db } from "@/db";
-import { messagesTable, usersTable } from "./db/schema";
+import { markov4Table, messagesTable, usersTable } from "./db/schema";
 import { eq } from "drizzle-orm";
+import { addMessageToMarkov4 } from "./train";
 
 export async function register(client: Client<true>) {
     // Insert existing guild member users into the database
@@ -52,7 +53,7 @@ export async function register(client: Client<true>) {
         });
     });
 
-    // Log new messages
+    // Store new messages
     client.on(Events.MessageCreate, async (message) => {
         const messageRow: typeof messagesTable.$inferInsert = {
             messageId: message.id,
@@ -64,6 +65,8 @@ export async function register(client: Client<true>) {
         };
         await db.insert(messagesTable).values(messageRow);
         console.log("Message created", messageRow);
+        await addMessageToMarkov4(message);
+        console.log("Message added to Markov model", message.id);
     });
 
     // Update content on message edits
@@ -79,10 +82,14 @@ export async function register(client: Client<true>) {
             oldContent: oldMessage.content,
             newContent: newMessage.content,
         });
+        // TODO: update entries for message in Markov model
     });
 
     // Delete deleted messages
     client.on(Events.MessageDelete, async (message) => {
+        await db
+            .delete(markov4Table)
+            .where(eq(markov4Table.messageId, message.id));
         await db
             .delete(messagesTable)
             .where(eq(messagesTable.messageId, message.id));
