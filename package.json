@@ -1,0 +1,20 @@
+{
+    "name": "yap-bot",
+    "module": "src/index.ts",
+    "type": "module",
+    "private": true,
+    "scripts": {
+        "dev": "bun run -b src/index.ts",
+        "fmt": "prettier --write ."
+    },
+    "devDependencies": {
+        "@types/bun": "latest"
+    },
+    "peerDependencies": {
+        "typescript": "^5"
+    },
+    "dependencies": {
+        "discord.js": "^14.25.1",
+        "zod": "^4.3.6"
+    }
+}
