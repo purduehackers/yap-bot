@@ -65,7 +65,7 @@ export async function register(client: Client<true>) {
         };
         await db.insert(messagesTable).values(messageRow);
         console.log("Message created", messageRow);
-        if (!message.author.bot) {
+        if (!message.author.bot && message.content.trim().length > 0) {
             await addMessageToMarkov4(message);
         }
         console.log("Message added to Markov model", message.id);
