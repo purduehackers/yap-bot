@@ -10,7 +10,7 @@ enum Tokens {
     Eof = "EOF",
 }
 
-function* tokenize(message: string) {
+export function* tokenize(message: string) {
     const lexer = new Tokenizr();
     lexer.rule(/\p{Separator}+/u, (ctx) => {
         ctx.accept(Tokens.Space);
@@ -59,38 +59,3 @@ export async function addMessageToMarkov4(
     });
     await db.insert(markov4Table).values(rows);
 }
-
-// export class CannotExtrapolate extends Error {
-//     public prompt: string;
-
-//     constructor(prompt: string) {
-//         super(`cannot extrapolate from prompt "${prompt}"`);
-//         this.prompt = prompt;
-//     }
-// }
-
-// export function generateSentence(prompt: string, authorId?: string): string {
-//     const tokens = Array.from(tokenize(prompt));
-//     let isFirstToken = true;
-//     doInTransaction(() => {
-//         while (true) {
-//             const token = getNextMarkovToken(
-//                 authorId,
-//                 tokens.at(-4) ?? null,
-//                 tokens.at(-3) ?? null,
-//                 tokens.at(-2) ?? null,
-//                 tokens.at(-1) ?? null,
-//             );
-//             if (token === null) break;
-//             isFirstToken = false;
-//             tokens.push(token);
-//             if (tokens.length > 1000) {
-//                 throw new Error("runaway message");
-//             }
-//         }
-//     })();
-//     if (isFirstToken) {
-//         throw new CannotExtrapolate(prompt);
-//     }
-//     return tokens.join("");
-// }
