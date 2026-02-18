@@ -1,0 +1,6 @@
+*
+!drizzle
+!src
+!package.json
+!bun.lock
+!tsconfig.json

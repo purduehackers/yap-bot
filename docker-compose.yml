@@ -1,0 +1,7 @@
+services:
+  bot:
+    build: .
+    restart: always
+    env_file: .env.production.local
+    volumes:
+      - "./data:/var/lib/bot"
