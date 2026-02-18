@@ -97,6 +97,7 @@ async function handleImitateCommand(interaction: ChatInputCommandInteraction) {
         );
         await interaction.reply({
             content: response,
+            allowedMentions: { parse: [] },
         });
     } catch (error) {
         await interaction.reply({
