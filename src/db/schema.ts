@@ -1,4 +1,11 @@
-import { sqliteTable, text, index, primaryKey } from "drizzle-orm/sqlite-core";
+import { eq, getTableColumns, not } from "drizzle-orm";
+import {
+    sqliteTable,
+    text,
+    index,
+    integer,
+    sqliteView,
+} from "drizzle-orm/sqlite-core";
 
 export const guildsTable = sqliteTable("guilds", {
     guildId: text().primaryKey(),
@@ -7,6 +14,7 @@ export const guildsTable = sqliteTable("guilds", {
 export const usersTable = sqliteTable("users", {
     userId: text().primaryKey(),
     username: text().notNull(),
+    optedOut: integer({ mode: "boolean" }).default(false).notNull(),
 });
 
 export const messagesTable = sqliteTable(
@@ -45,4 +53,13 @@ export const markov4Table = sqliteTable(
             table.word4,
         ),
     ],
+);
+
+// Messages from users who have not opted out
+export const messagesView = sqliteView("messages_view").as((qb) =>
+    qb
+        .select(getTableColumns(messagesTable))
+        .from(messagesTable)
+        .innerJoin(usersTable, eq(messagesTable.userId, usersTable.userId))
+        .where(not(usersTable.optedOut)),
 );

@@ -1,6 +1,6 @@
 import { and, count, eq, is, sql } from "drizzle-orm";
 import { db } from "./db";
-import { markov4Table, messagesTable } from "./db/schema";
+import { markov4Table, messagesTable, messagesView } from "./db/schema";
 import { tokenize } from "./train";
 
 export class CannotExtrapolate extends Error {
@@ -28,16 +28,16 @@ export async function generateSentence(
                 sql`${markov4Table.word3} IS ${tokens.at(-2) ?? null}`,
                 sql`${markov4Table.word4} IS ${tokens.at(-1) ?? null}`,
                 channelId
-                    ? eq(messagesTable.channelId, channelId)
-                    : eq(messagesTable.guildId, guildId),
-                authorId ? eq(messagesTable.userId, authorId) : undefined,
+                    ? eq(messagesView.channelId, channelId)
+                    : eq(messagesView.guildId, guildId),
+                authorId ? eq(messagesView.userId, authorId) : undefined,
             );
             const countResult = await tx
                 .select({ count: count() })
                 .from(markov4Table)
                 .innerJoin(
-                    messagesTable,
-                    eq(markov4Table.messageId, messagesTable.messageId),
+                    messagesView,
+                    eq(markov4Table.messageId, messagesView.messageId),
                 )
                 .where(filter);
             const nRows = countResult[0]!.count;
@@ -46,8 +46,8 @@ export async function generateSentence(
                 .select({ word5: markov4Table.word5 })
                 .from(markov4Table)
                 .innerJoin(
-                    messagesTable,
-                    eq(markov4Table.messageId, messagesTable.messageId),
+                    messagesView,
+                    eq(markov4Table.messageId, messagesView.messageId),
                 )
                 .where(filter)
                 .offset(offset)
