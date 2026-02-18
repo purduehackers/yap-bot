@@ -1,5 +1,6 @@
 import { Client, GatewayIntentBits } from "discord.js";
 import { env } from "@/env";
+import { register as registerTracking } from "@/track";
 
 const client = new Client({
     intents: [
@@ -13,7 +14,8 @@ const client = new Client({
 client.once("clientReady", async (client) => {
     await client.user.setUsername(env.NICKNAME);
     console.log(`Logged in as ${client.user.displayName}`);
-    client.destroy();
+
+    [registerTracking].forEach((f) => f(client));
 });
 
 client.login(env.DISCORD_BOT_TOKEN);
