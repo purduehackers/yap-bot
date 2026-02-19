@@ -81,7 +81,15 @@ export async function generateSentence(
                   }
                 : undefined;
             if (citation && token.trim() !== "") {
-                citedMessages.push(citation);
+                const lastCitation = citedMessages.at(-1);
+                if (
+                    lastCitation &&
+                    lastCitation.messageId == citation.messageId
+                ) {
+                    lastCitation.token += " " + citation.token;
+                } else {
+                    citedMessages.push(citation);
+                }
             }
             if (tokens.length > 1000) {
                 throw new Error("runaway message");
