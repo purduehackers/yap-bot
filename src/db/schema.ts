@@ -22,8 +22,12 @@ export const messagesTable = sqliteTable(
     "messages",
     {
         messageId: text().primaryKey(),
-        userId: text().references(() => usersTable.userId),
-        guildId: text().references(() => guildsTable.guildId),
+        userId: text()
+            .notNull()
+            .references(() => usersTable.userId),
+        guildId: text()
+            .notNull()
+            .references(() => guildsTable.guildId),
         channelId: text().notNull(),
         timestamp: text().notNull(),
         content: text().notNull(),
