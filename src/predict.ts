@@ -12,13 +12,24 @@ export class CannotExtrapolate extends Error {
     }
 }
 
+export interface CitedMessage {
+    token: string;
+    guildId: string;
+    channelId: string;
+    messageId: string;
+}
+export interface GeneratedSentence {
+    sentence: string;
+    citedMessages: CitedMessage[];
+}
 export async function generateSentence(
     prompt: string,
     guildId: string,
     authorId?: string,
     channelId?: string,
-): Promise<string> {
+): Promise<GeneratedSentence> {
     const tokens = Array.from(tokenize(prompt));
+    const citedMessages: CitedMessage[] = [];
     let isFirstToken = true;
     await db.transaction(async (tx) => {
         while (true) {
@@ -43,7 +54,12 @@ export async function generateSentence(
             const nRows = countResult[0]!.count;
             const offset = Math.floor(Math.random() * nRows);
             const tokenResult = await tx
-                .select({ word5: markov4Table.word5 })
+                .select({
+                    word5: markov4Table.word5,
+                    messageId: messagesView.messageId,
+                    channelId: messagesView.channelId,
+                    guildId: messagesView.guildId,
+                })
                 .from(markov4Table)
                 .innerJoin(
                     messagesView,
@@ -56,6 +72,21 @@ export async function generateSentence(
             if (token === null) break;
             isFirstToken = false;
             tokens.push(token);
+            const citation: CitedMessage | undefined = tokenResult[0]
+                ? {
+                      token,
+                      messageId: tokenResult[0].messageId,
+                      guildId: tokenResult[0].guildId,
+                      channelId: tokenResult[0].channelId,
+                  }
+                : undefined;
+            if (
+                citation &&
+                token.trim() !== "" &&
+                citedMessages.at(-1) !== citation
+            ) {
+                citedMessages.push(citation);
+            }
             if (tokens.length > 1000) {
                 throw new Error("runaway message");
             }
@@ -64,5 +95,8 @@ export async function generateSentence(
     if (isFirstToken) {
         throw new CannotExtrapolate(prompt);
     }
-    return tokens.join("");
+    return {
+        sentence: tokens.join(""),
+        citedMessages,
+    };
 }

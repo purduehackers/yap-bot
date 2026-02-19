@@ -1,12 +1,16 @@
 import {
+    ApplicationCommandType,
     ChatInputCommandInteraction,
+    ContextMenuCommandBuilder,
+    ContextMenuCommandInteraction,
     Events,
     MessageFlags,
+    messageLink,
     SlashCommandBuilder,
     type Client,
     type SlashCommandOptionsOnlyBuilder,
 } from "discord.js";
-import { generateSentence } from "./predict";
+import { generateSentence, type CitedMessage } from "./predict";
 import { db } from "./db";
 import { usersTable } from "./db/schema";
 import { eq, not } from "drizzle-orm";
@@ -37,39 +41,75 @@ const optOutCommand = new SlashCommandBuilder()
     .setName("opt-out")
     .setDescription("Toggle opting out of being imitated");
 
-type CommandHandler = (
+const citeCommand = new ContextMenuCommandBuilder()
+    .setType(ApplicationCommandType.Message)
+    .setName("Cite");
+
+type SlashCommandHandler = (
     interaction: ChatInputCommandInteraction,
 ) => Promise<void>;
-const allCommands: {
+const slashCommands: {
     definition: SlashCommandBuilder | SlashCommandOptionsOnlyBuilder;
-    handler: CommandHandler;
+    handler: SlashCommandHandler;
 }[] = [
     { definition: imitateCommand, handler: handleImitateCommand },
     { definition: optOutCommand, handler: handleOptOutCommand },
 ];
+
+type ContextMenuCommandHandler = (
+    interaction: ContextMenuCommandInteraction,
+) => Promise<void>;
+const contextMenuCommands: {
+    definition: ContextMenuCommandBuilder;
+    handler: ContextMenuCommandHandler;
+}[] = [{ definition: citeCommand, handler: handleCiteCommand }];
 
 export async function register(client: Client<true>) {
     await Promise.all(
         client.guilds.cache
             .values()
             .flatMap((guild) =>
-                allCommands.map(({ definition }) =>
-                    guild.commands.create(definition),
+                [...slashCommands, ...contextMenuCommands].map(
+                    ({ definition }) => guild.commands.create(definition),
                 ),
             ),
     );
     console.log("Registered commands with all guilds");
 
-    // Handle commands
+    // Handle slash commands
     client.on(Events.InteractionCreate, async (interaction) => {
         if (!interaction.isChatInputCommand()) return;
 
-        const dispatcher: Record<string, CommandHandler> = Object.fromEntries(
-            allCommands.map(({ definition, handler }) => [
-                definition.name,
-                handler,
-            ]),
-        );
+        const dispatcher: Record<string, SlashCommandHandler> =
+            Object.fromEntries(
+                slashCommands.map(({ definition, handler }) => [
+                    definition.name,
+                    handler,
+                ]),
+            );
+
+        const handler = dispatcher[interaction.commandName];
+        if (!handler) {
+            await interaction.reply({
+                content: "⚠️ Error: unknown command",
+                flags: MessageFlags.Ephemeral,
+            });
+            return;
+        }
+        await handler(interaction);
+    });
+
+    // Handle context menu commands
+    client.on(Events.InteractionCreate, async (interaction) => {
+        if (!interaction.isContextMenuCommand()) return;
+
+        const dispatcher: Record<string, ContextMenuCommandHandler> =
+            Object.fromEntries(
+                contextMenuCommands.map(({ definition, handler }) => [
+                    definition.name,
+                    handler,
+                ]),
+            );
 
         const handler = dispatcher[interaction.commandName];
         if (!handler) {
@@ -89,16 +129,18 @@ async function handleImitateCommand(interaction: ChatInputCommandInteraction) {
         const user = interaction.options.getUser("user");
         const channel = interaction.options.getChannel("channel");
         const prefix = interaction.options.getString("prompt") ?? "";
-        const response = await generateSentence(
+        const generated = await generateSentence(
             prefix,
             interaction.guildId!,
             user?.id,
             channel?.id,
         );
-        await interaction.reply({
-            content: response,
+        const response = await interaction.reply({
+            content: generated.sentence,
             allowedMentions: { parse: [] },
+            withResponse: true,
         });
+        logCitations(response.resource!.message!.id, generated.citedMessages);
     } catch (error) {
         await interaction.reply({
             content: `⚠️ Error: ${error instanceof Error ? error.message : error}`,
@@ -125,6 +167,41 @@ async function handleOptOutCommand(interaction: ChatInputCommandInteraction) {
         await interaction.reply({
             content: `You are now opted ${newValue ? "out" : "in"}.`,
             flags: MessageFlags.Ephemeral,
+        });
+    } catch (error) {
+        await interaction.reply({
+            content: `⚠️ Error: ${error instanceof Error ? error.message : error}`,
+            flags: MessageFlags.Ephemeral,
+        });
+    }
+}
+
+const MAX_CITATIONS = 100;
+const citations = new Map<string, CitedMessage[]>();
+
+function logCitations(messageId: string, citedMessages: CitedMessage[]) {
+    if (citations.size >= MAX_CITATIONS) {
+        const oldest = citations.keys().next().value!;
+        citations.delete(oldest);
+    }
+    citations.set(messageId, citedMessages);
+}
+
+async function handleCiteCommand(interaction: ContextMenuCommandInteraction) {
+    try {
+        if (!interaction.isMessageContextMenuCommand())
+            throw new Error("borken :(");
+        const messageId = interaction.targetMessage.id;
+        const citation = citations.get(messageId);
+        if (citation === undefined) throw new Error("Message is too old");
+        const list = citation
+            .map(
+                ({ guildId, channelId, messageId, token }) =>
+                    `- ${token}: ${messageLink(channelId, messageId, guildId)}`,
+            )
+            .join("\n");
+        await interaction.reply({
+            content: `Cited ${citation.length} messages:\n${list}`,
         });
     } catch (error) {
         await interaction.reply({
