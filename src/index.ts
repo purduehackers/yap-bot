@@ -2,6 +2,7 @@ import { Client, GatewayIntentBits } from "discord.js";
 import { env } from "@/env";
 import { register as registerTracking } from "@/track";
 import { register as registerCommands } from "@/commands";
+import { register as registerSpam } from "@/spam";
 
 const client = new Client({
     intents: [
@@ -16,7 +17,7 @@ client.once("clientReady", async (client) => {
     await client.user.setUsername(env.NICKNAME);
     console.log(`Logged in as ${client.user.displayName}`);
 
-    [registerTracking, registerCommands].forEach((f) => f(client));
+    [registerTracking, registerCommands, registerSpam].forEach((f) => f(client));
 });
 
 // For some reason, the program doesn't seem to stop when it gets a signal

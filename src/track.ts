@@ -105,6 +105,7 @@ export async function register(client: Client<true>) {
 
     // Store new messages
     client.on(Events.MessageCreate, async (message) => {
+        if (!message.inGuild()) return;
         const messageRow: typeof messagesTable.$inferInsert = {
             messageId: message.id,
             userId: message.author.id,
