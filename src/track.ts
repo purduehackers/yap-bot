@@ -1,4 +1,11 @@
-import { Events, type Client } from "discord.js";
+import {
+    Events,
+    PermissionFlagsBits,
+    PermissionsBitField,
+    type Channel,
+    type Client,
+    type GuildBasedChannel,
+} from "discord.js";
 import { db } from "@/db";
 import {
     guildsTable,
@@ -8,6 +15,15 @@ import {
 } from "./db/schema";
 import { eq } from "drizzle-orm";
 import { addMessageToMarkov4 } from "./train";
+
+async function isPublicChannel(channel: GuildBasedChannel): Promise<boolean> {
+    return channel
+        .permissionsFor(channel.guild.roles.everyone)
+        .has([
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.ReadMessageHistory,
+        ]);
+}
 
 export async function register(client: Client<true>) {
     // Insert existing guilds into the database
@@ -106,6 +122,13 @@ export async function register(client: Client<true>) {
     // Store new messages
     client.on(Events.MessageCreate, async (message) => {
         if (!message.inGuild()) return;
+        if (!(await isPublicChannel(message.channel))) {
+            console.debug(
+                "Not training on message in private channel",
+                message.id,
+            );
+            return;
+        }
         const messageRow: typeof messagesTable.$inferInsert = {
             messageId: message.id,
             userId: message.author.id,
