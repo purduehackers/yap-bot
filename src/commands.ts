@@ -6,10 +6,14 @@ import {
     Events,
     MessageFlags,
     messageLink,
+    MessagePayload,
+    PermissionFlagsBits,
     SlashCommandBuilder,
     type Client,
+    type InteractionReplyOptions,
     type SlashCommandOptionsOnlyBuilder,
 } from "discord.js";
+import { handleImport } from "./import";
 import { generateSentence, type CitedMessage } from "./predict";
 import { db } from "./db";
 import { usersTable } from "./db/schema";
@@ -41,6 +45,27 @@ const optOutCommand = new SlashCommandBuilder()
     .setName("opt-out")
     .setDescription("Toggle opting out of being imitated");
 
+const importHistoryCommand = new SlashCommandBuilder()
+    .setName("import-history")
+    .setDescription("Import historical messages for training (Admin only)")
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+    .addChannelOption((option) =>
+        option
+            .setName("channel")
+            .setDescription(
+                "Specific channel to import. If omitted, imports all public channels.",
+            )
+            .setRequired(false),
+    )
+    .addBooleanOption((option) =>
+        option
+            .setName("resume")
+            .setDescription(
+                "Resume from oldest message in database instead of starting from now (default: true)",
+            )
+            .setRequired(false),
+    );
+
 const citeCommand = new ContextMenuCommandBuilder()
     .setType(ApplicationCommandType.Message)
     .setName("Cite");
@@ -54,6 +79,7 @@ const slashCommands: {
 }[] = [
     { definition: imitateCommand, handler: handleImitateCommand },
     { definition: optOutCommand, handler: handleOptOutCommand },
+    { definition: importHistoryCommand, handler: handleImportHistoryCommand },
 ];
 
 type ContextMenuCommandHandler = (
@@ -168,6 +194,26 @@ async function handleOptOutCommand(interaction: ChatInputCommandInteraction) {
             content: `⚠️ Error: ${error instanceof Error ? error.message : error}`,
             flags: MessageFlags.Ephemeral,
         });
+    }
+}
+
+async function handleImportHistoryCommand(
+    interaction: ChatInputCommandInteraction,
+) {
+    try {
+        const channel = interaction.options.getChannel("channel");
+        const resume = interaction.options.getBoolean("resume") ?? true;
+        await handleImport(interaction, channel?.id ?? null, resume);
+    } catch (error) {
+        const content: InteractionReplyOptions = {
+            content: `⚠️ Error: ${error instanceof Error ? error.message : error}`,
+            flags: [MessageFlags.Ephemeral],
+        };
+        if (interaction.replied) {
+            await interaction.followUp(content);
+        } else {
+            await interaction.reply(content);
+        }
     }
 }
 

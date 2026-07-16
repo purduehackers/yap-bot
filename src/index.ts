@@ -17,7 +17,9 @@ client.once("clientReady", async (client) => {
     await client.user.setUsername(env.NICKNAME);
     console.log(`Logged in as ${client.user.displayName}`);
 
-    [registerTracking, registerCommands, registerSpam].forEach((f) => f(client));
+    [registerTracking, registerCommands, registerSpam].forEach((f) =>
+        f(client),
+    );
 });
 
 // For some reason, the program doesn't seem to stop when it gets a signal

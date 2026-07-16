@@ -1,6 +1,6 @@
-import { and, count, eq, is, sql } from "drizzle-orm";
+import { and, count, eq, sql } from "drizzle-orm";
 import { db } from "./db";
-import { markov4Table, messagesTable, messagesView } from "./db/schema";
+import { markov4Table, messagesView } from "./db/schema";
 import { tokenize } from "./train";
 
 export class CannotExtrapolate extends Error {
