@@ -65,16 +65,11 @@ const contextMenuCommands: {
 }[] = [{ definition: citeCommand, handler: handleCiteCommand }];
 
 export async function register(client: Client<true>) {
-    await Promise.all(
-        client.guilds.cache
-            .values()
-            .flatMap((guild) =>
-                [...slashCommands, ...contextMenuCommands].map(
-                    ({ definition }) => guild.commands.create(definition),
-                ),
-            ),
+    const definitions = [...slashCommands, ...contextMenuCommands].map(
+        (cmd) => cmd.definition,
     );
-    console.log("Registered commands with all guilds");
+    await client.application.commands.set(definitions);
+    console.log("Registered commands globally");
 
     // Handle slash commands
     client.on(Events.InteractionCreate, async (interaction) => {

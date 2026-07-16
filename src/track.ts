@@ -1,36 +1,81 @@
 import { Events, type Client } from "discord.js";
 import { db } from "@/db";
-import { markov4Table, messagesTable, usersTable } from "./db/schema";
+import {
+    guildsTable,
+    markov4Table,
+    messagesTable,
+    usersTable,
+} from "./db/schema";
 import { eq } from "drizzle-orm";
 import { addMessageToMarkov4 } from "./train";
 
 export async function register(client: Client<true>) {
+    // Insert existing guilds into the database
+    if (client.guilds.cache.size > 0) {
+        await db
+            .insert(guildsTable)
+            .values(
+                client.guilds.cache.map((guild) => ({
+                    guildId: guild.id,
+                })),
+            )
+            .onConflictDoNothing();
+        console.log("Guilds added/updated");
+    }
+
     // Insert existing guild member users into the database
-    const allUsers = (
-        await Promise.all(
-            client.guilds.cache.map((guild) =>
-                guild.members
-                    .fetch()
-                    .then((members) => members.values().toArray()),
-            ),
-        )
-    )
-        .flat()
-        .map((member) => member.user);
-    await db
-        .insert(usersTable)
-        .values(
-            allUsers.map(
-                (user) =>
-                    ({
-                        userId: user.id,
-                        username: user.username,
-                        isBot: user.bot,
-                    }) satisfies typeof usersTable.$inferInsert,
-            ),
-        )
-        .onConflictDoNothing();
-    console.log("Guild users added/updated");
+    const allUsers = await Promise.all(
+        client.guilds.cache.map((guild) =>
+            guild.members.fetch().then((members) => members.values().toArray()),
+        ),
+    ).then((lists) => lists.flat().map((member) => member.user));
+    if (allUsers.length > 0) {
+        await db
+            .insert(usersTable)
+            .values(
+                allUsers.map(
+                    (user) =>
+                        ({
+                            userId: user.id,
+                            username: user.username,
+                            isBot: user.bot,
+                        }) satisfies typeof usersTable.$inferInsert,
+                ),
+            )
+            .onConflictDoNothing();
+        console.log("Guild users added/updated");
+    }
+
+    // Track new guilds joined
+    client.on(Events.GuildCreate, async (guild) => {
+        await db
+            .insert(guildsTable)
+            .values({ guildId: guild.id })
+            .onConflictDoNothing();
+        console.log("Guild joined, registered guild", guild.id);
+
+        try {
+            const members = await guild.members.fetch();
+            await db
+                .insert(usersTable)
+                .values(
+                    members.map((member) => ({
+                        userId: member.user.id,
+                        username: member.user.username,
+                        isBot: member.user.bot,
+                    })),
+                )
+                .onConflictDoNothing();
+            console.log(
+                `Fetched and registered ${members.size} users from new guild ${guild.id}`,
+            );
+        } catch (error) {
+            console.error(
+                `Failed to fetch members for new guild ${guild.id}:`,
+                error,
+            );
+        }
+    });
 
     // Add new members
     client.on(Events.GuildMemberAdd, async (member) => {
