@@ -153,16 +153,8 @@ export async function handleImport(
         return;
     }
 
-    const guild = interaction.guild;
-    if (!guild) {
-        await interaction.reply({
-            content: "🚫 This command can only be used in a server.",
-            ephemeral: true,
-        });
-        return;
-    }
-
     // Register guild just in case
+    const guild = interaction.guild!;
     await db
         .insert(guildsTable)
         .values({ guildId: guild.id })

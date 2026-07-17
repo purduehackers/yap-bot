@@ -4,6 +4,7 @@ import {
     ContextMenuCommandBuilder,
     ContextMenuCommandInteraction,
     Events,
+    InteractionContextType,
     MessageFlags,
     messageLink,
     MessagePayload,
@@ -22,6 +23,7 @@ import { eq, not } from "drizzle-orm";
 const imitateCommand = new SlashCommandBuilder()
     .setName("imitate")
     .setDescription("Generate non-AI slop")
+    .setContexts(InteractionContextType.Guild)
     .addUserOption((option) =>
         option
             .setName("user")
@@ -43,12 +45,13 @@ const imitateCommand = new SlashCommandBuilder()
 
 const optOutCommand = new SlashCommandBuilder()
     .setName("opt-out")
-    .setDescription("Toggle opting out of being imitated");
+    .setDescription("Toggle opting out of being imitated")
+    .setContexts(InteractionContextType.Guild);
 
 const importHistoryCommand = new SlashCommandBuilder()
     .setName("import-history")
-    .setDescription("Import historical messages for training (Admin only)")
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+    .setDescription("Import historical messages for training")
+    .setContexts(InteractionContextType.Guild)
     .addChannelOption((option) =>
         option
             .setName("channel")
