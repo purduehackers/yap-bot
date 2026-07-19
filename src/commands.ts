@@ -240,15 +240,28 @@ async function handleCiteCommand(interaction: ContextMenuCommandInteraction) {
         const messageId = interaction.targetMessage.id;
         const citation = citations.get(messageId);
         if (citation === undefined) throw new Error("Message is too old");
-        const list = citation
-            .map(
-                ({ guildId, channelId, messageId, token }) =>
-                    `- ${token}: ${messageLink(channelId, messageId, guildId)}`,
-            )
-            .join("\n");
-        await interaction.reply({
-            content: `Cited ${citation.length} messages:\n${list}`,
-        });
+        const lines = citation.map(
+            ({ guildId, channelId, messageId, token }) =>
+                `- ${token}: ${messageLink(channelId, messageId, guildId)}`,
+        );
+        const chunks = [`Cited ${citation.length} messages:`];
+        for (const line of lines) {
+            let lastChunk = chunks.at(-1)!;
+            if (lastChunk.length + line.length + 1 <= 2000) {
+                lastChunk += "\n" + line;
+                chunks[chunks.length - 1] = lastChunk;
+            } else {
+                chunks.push(line);
+            }
+        }
+        for (const [i, chunk] of chunks.entries()) {
+            await (i === 0 ? interaction.reply : interaction.followUp).call(
+                interaction,
+                {
+                    content: chunk,
+                },
+            );
+        }
     } catch (error) {
         await interaction.reply({
             content: `⚠️ Error: ${error instanceof Error ? error.message : error}`,
