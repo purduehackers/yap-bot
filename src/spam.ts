@@ -134,42 +134,51 @@ export async function register(client: Client<true>) {
 async function handleMessageCreate(
     message: OmitPartialGroupDMChannel<Message>,
 ) {
-    if (
-        !message.inGuild() ||
-        message.author.bot ||
-        message.guildId !== TARGET_GUILD_ID
-    ) {
-        return;
-    }
-
-    const data: MessageData = {
-        authorId: message.author.id,
-        channelId: message.channelId,
-        content: message.content,
-        createdAt: message.createdAt,
-        url: message.url,
-        attachments: message.attachments.map((a) => ({
-            size: a.size,
-            contentType: a.contentType,
-        })),
-    };
-
-    const action = detector.processMessage(data);
-
-    if (action.do === "alert") {
-        const activeAlert = activeAlertMessages.get(action.signature);
-        if (activeAlert) {
-            await activeAlert.edit(action.alertContent);
-        } else {
-            const alertChannel =
-                await message.client.channels.fetch(ALERT_CHANNEL_ID);
-            if (!alertChannel) throw new Error("alert channel not found");
-            if (!alertChannel.isTextBased() || alertChannel.isDMBased())
-                throw new Error("alert channel is not a guild text channel");
-
-            const sentAlert = await alertChannel.send(action.alertContent);
-            activeAlertMessages.set(action.signature, sentAlert);
+    try {
+        if (
+            !message.inGuild() ||
+            message.author.bot ||
+            message.guildId !== TARGET_GUILD_ID
+        ) {
+            return;
         }
+
+        const data: MessageData = {
+            authorId: message.author.id,
+            channelId: message.channelId,
+            content: message.content,
+            createdAt: message.createdAt,
+            url: message.url,
+            attachments: message.attachments.map((a) => ({
+                size: a.size,
+                contentType: a.contentType,
+            })),
+        };
+
+        const action = detector.processMessage(data);
+
+        if (action.do === "alert") {
+            const activeAlert = activeAlertMessages.get(action.signature);
+            if (activeAlert) {
+                await activeAlert.edit(action.alertContent);
+            } else {
+                const alertChannel =
+                    await message.client.channels.fetch(ALERT_CHANNEL_ID);
+                if (!alertChannel) throw new Error("alert channel not found");
+                if (!alertChannel.isTextBased() || alertChannel.isDMBased())
+                    throw new Error(
+                        "alert channel is not a guild text channel",
+                    );
+
+                const sentAlert = await alertChannel.send(action.alertContent);
+                activeAlertMessages.set(action.signature, sentAlert);
+            }
+        }
+    } catch (err) {
+        console.error(
+            "Error processing message creation event for spam detection:",
+            err,
+        );
     }
 }
 
